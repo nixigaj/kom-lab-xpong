@@ -1,0 +1,10 @@
+# Editors
+.idea
+.vscode
+
+# Build stuff
+*.o
+xpong
+
+# Debug stuff
+vgcore.*
