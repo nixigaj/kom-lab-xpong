@@ -13,19 +13,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-all: xpong
+CC = gcc
 
-CFLAGS = -O3 -g -Wall
+OBJS = xpong.o simulate.o window.o network.o
+
+CFLAGS = -Wall
 LDLIBS = -lm
 CFLAGS += $(shell sdl2-config --cflags)
 LDLIBS += $(shell sdl2-config --libs)
 
 ifdef DEBUG
-CFLAGS += -DDEBUG
+    CFLAGS += -g -O0 -DDEBUG
+else
+    CFLAGS += -O3
 endif
 
-xpong: xpong.o simulate.o window.o network.o
+all: xpong
+
+xpong: $(OBJS)
+	$(CC) $(OBJS) $(LDLIBS) -o xpong
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 .PHONY: clean
 clean:
-	rm -f xpong *.o
+	rm -f xpong $(OBJS)
