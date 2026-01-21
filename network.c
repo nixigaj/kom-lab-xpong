@@ -52,6 +52,11 @@ void net_init(unsigned short port_self, const char *hostname_other,
     .sin_port = htons(port_self)
   };
   sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  if (sock < 0) {
+    perror("socket");
+    exit(EXIT_FAILURE);
+  }
+
   int err = bind(sock, (struct sockaddr *)&sa, sizeof(sa));
   if (err != 0) {
     fprintf(stderr, "bruh moment detected. exiting...\n");
@@ -78,7 +83,10 @@ void net_init(unsigned short port_self, const char *hostname_other,
   }
 }
 
-void net_fini() { /* TODO: Shutdown the socket. */ }
+void net_fini() {
+  /* TODO: Shutdown the socket. */
+  close(sock);
+}
 
 static void serialise(unsigned char *buff, const net_packet_t *pkt) {
   /* TODO:
@@ -87,10 +95,19 @@ static void serialise(unsigned char *buff, const net_packet_t *pkt) {
    *
    * Note that it must use network endian.
    */
+  buff[0] = pkt->opcode;
+  uint16_t epoch_packet = htons(pkt->epoch);
+  memcpy(&buff[1], &epoch_packet, 2);
+  buff[3] = pkt->input;
 }
 
 static void deserialise(net_packet_t *pkt, const unsigned char *buff) {
   /* TODO: Deserialise the packet into the net_packet structure. */
+  pkt->opcode = buff[0];
+  uint16_t epoch_packet;
+  memcpy(&epoch_packet, &buff[1], 2);
+  pkt->epoch = ntohs(epoch_packet);
+  pkt->input = buff[3];
 }
 
 int net_poll(net_packet_t *pkt) {
@@ -100,9 +117,34 @@ int net_poll(net_packet_t *pkt) {
    *
    * Returns 1 otherwise.
    */
-  return 0;
+  struct pollfd pfd = {
+    .fd = sock,
+    .events = POLLIN
+  };
+
+  int ret = poll(&pfd, 1, 0);
+  if (ret <= 0 || !(pfd.revents)) {
+    return 0;
+  }
+
+  unsigned char buff[4];
+  struct sockaddr_in from;
+  socklen_t fromlen = sizeof(from);
+
+  ssize_t n = recvfrom(sock, buff, sizeof(buff), 0,
+                       (struct sockaddr *)&from, &fromlen);
+  if (n != 4) {
+    return 0;
+  }
+
+  deserialise(pkt, buff);
+  return 1;
 }
 
 void net_send(const net_packet_t *pkt) {
   /* TODO: Serialise and send the packet to the other's socket. */
+  unsigned char buff[4];
+  serialise(buff, pkt);
+  sendto(sock, buff, sizeof(buff), 0,
+         (struct sockaddr *)&sock_addr_other, sizeof(sock_addr_other));
 }
