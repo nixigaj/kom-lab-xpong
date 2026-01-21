@@ -123,7 +123,7 @@ int net_poll(net_packet_t *pkt) {
   };
 
   int ret = poll(&pfd, 1, 0);
-  if (ret <= 0 || !(pfd.revents & POLLIN)) {
+  if (ret <= 0 || !(pfd.revents)) {
     return 0;
   }
 
