@@ -64,11 +64,6 @@ void net_init(unsigned short port_self, const char *hostname_other,
     exit(EXIT_FAILURE);
   }
 
-  memset(&sock_addr_other, 0, sizeof(sock_addr_other));
-  sock_addr_other.sin_family = AF_INET;
-  sock_addr_other.sin_addr.s_addr = htonl(INADDR_ANY);
-  sock_addr_other.sin_port = htons(port_other);
-
   struct addrinfo hints = {0};
   struct addrinfo *res;
 
@@ -81,6 +76,11 @@ void net_init(unsigned short port_self, const char *hostname_other,
     close(sock);
     exit(EXIT_FAILURE);
   }
+
+  memset(&sock_addr_other, 0, sizeof(sock_addr_other));
+  sock_addr_other.sin_family = AF_INET;
+  sock_addr_other.sin_addr = ((struct sockaddr_in *)res->ai_addr)->sin_addr;
+  sock_addr_other.sin_port = htons(port_other);
 }
 
 void net_fini() {
